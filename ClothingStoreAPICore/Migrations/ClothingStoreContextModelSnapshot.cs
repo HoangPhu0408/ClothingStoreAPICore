@@ -223,7 +223,7 @@ namespace ClothingStoreAPICore.Migrations
                     b.Property<int?>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedDate")
+                    b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime");
 
                     b.Property<string>("ImgPath1")

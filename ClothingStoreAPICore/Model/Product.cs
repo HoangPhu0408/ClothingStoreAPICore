@@ -1,4 +1,6 @@
-﻿namespace ClothingStoreAPICore.Model
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ClothingStoreAPICore.Model
 {
     public partial class Product
     {
@@ -17,7 +19,7 @@
         public int? Amount1 { get; set; }
         public int? Amount2 { get; set; }
         public int? Amount3 { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public DateTime? CreatedDate { get; set; }
         public string? Introduction { get; set; }
 
         public string? ImgPath1 { get; set; }
@@ -26,6 +28,14 @@
 
         public string? ImgPath3 { get; set; }
 
-      
+        [NotMapped]
+        public IFormFile? Image1 { get; set; }
+
+        [NotMapped]
+        public IFormFile? Image2 { get; set; }
+
+        [NotMapped]
+        public IFormFile? Image3 { get; set; }
+
     }
 }

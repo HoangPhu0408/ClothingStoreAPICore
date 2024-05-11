@@ -134,7 +134,7 @@ namespace ClothingStoreAPICore.Migrations
                     Amount1 = table.Column<int>(type: "int", nullable: true),
                     Amount2 = table.Column<int>(type: "int", nullable: true),
                     Amount3 = table.Column<int>(type: "int", nullable: true),
-                    CreatedDate = table.Column<DateTime>(type: "datetime", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime", nullable: true),
                     Introduction = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     ImgPath1 = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ImgPath2 = table.Column<string>(type: "nvarchar(max)", nullable: true),

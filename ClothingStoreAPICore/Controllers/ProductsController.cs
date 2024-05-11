@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ClothingStoreAPICore.Model;
+using Microsoft.Extensions.Hosting;
 
 namespace ClothingStoreAPICore.Controllers
 {
@@ -14,10 +15,12 @@ namespace ClothingStoreAPICore.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly ClothingStoreContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public ProductsController(ClothingStoreContext context)
+        public ProductsController(ClothingStoreContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // GET: api/Products
@@ -67,7 +70,7 @@ namespace ClothingStoreAPICore.Controllers
         // PUT: api/Products/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, Product product)
+        public async Task<IActionResult> PutProduct(int id, [FromForm] Product product)
         {
             var existingProd = await _context.Products.FirstOrDefaultAsync(s => s.ProductId == id);
             if (existingProd == null)
@@ -80,20 +83,19 @@ namespace ClothingStoreAPICore.Controllers
             existingProd.CreatedDate = product.CreatedDate;
             existingProd.InitialPrice = product.InitialPrice;
             existingProd.OfficialPrice = product.OfficialPrice;
-           
             existingProd.Amount1 = product.Amount1;
             existingProd.Amount2 = product.Amount2;
             existingProd.Amount3 = product.Amount3;
             existingProd.Size1 = product.Size1;
             existingProd.Size2 = product.Size2;
             existingProd.Size3 = product.Size3;
-            existingProd.ImgPath1 = product.ImgPath1;
-            existingProd.ImgPath2 = product.ImgPath2;
-            existingProd.ImgPath3 = product.ImgPath3;
+            existingProd.Image1 = product.Image1;
+            existingProd.Image2 = product.Image2;
+            existingProd.Image3 = product.Image3;
+            existingProd.ImgPath1 = await UploadImageAsync(product.Image1);
+            existingProd.ImgPath2 = await UploadImageAsync(product.Image2);
+            existingProd.ImgPath3 = await UploadImageAsync(product.Image3);
             existingProd.Introduction = product.Introduction;
-            existingProd.ImgPath1 = product.ImgPath1;
-            existingProd.ImgPath2 = product.ImgPath2;
-            existingProd.ImgPath3 = product.ImgPath3;
 
             await _context.SaveChangesAsync();
 
@@ -102,17 +104,51 @@ namespace ClothingStoreAPICore.Controllers
 
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
-        {
-            if (_context.Products == null)
-            {
-                return Problem("Entity set 'ClothingStoreContext.Products'  is null.");
-            }
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+        //[HttpPost]
+        //public async Task<ActionResult<Product>> PostProduct(Product product)
+        //{
+        //    if (_context.Products == null)
+        //    {
+        //        return Problem("Entity set 'ClothingStoreContext.Products'  is null.");
+        //    }
+        //    _context.Products.Add(product);
+        //    await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
+        //    return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
+        //}
+        [HttpPost]
+        public async Task<ActionResult<Product>> PostProduct([FromForm] Product prod)
+        {
+            try
+            {
+                if (prod.Image1 != null)
+                {
+                    prod.ImgPath1 = await UploadImageAsync(prod.Image1);
+                }
+
+                if (prod.Image2 != null)
+                {
+                    prod.ImgPath2 = await UploadImageAsync(prod.Image2);
+                }
+
+                if (prod.Image3 != null)
+                {
+                    prod.ImgPath3 = await UploadImageAsync(prod.Image3);
+                }
+
+                DateTime now = DateTime.UtcNow;
+                prod.CreatedDate = now;
+
+                _context.Products.Add(prod);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetProduct", new { id = prod.ProductId }, prod);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating product: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Internal Server Error");
+            }
         }
 
 
@@ -164,6 +200,29 @@ namespace ClothingStoreAPICore.Controllers
         private bool ProductExists(int id)
         {
             return (_context.Products?.Any(e => e.ProductId == id)).GetValueOrDefault();
+        }
+        private async Task<string> UploadImageAsync(IFormFile imageFile)
+        {
+            string uploadsPath = Path.Combine(_environment.WebRootPath, "uploads");
+
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
+
+            string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+            string relativeImagePath = Path.Combine("uploads", uniqueFileName);
+            string imagePath = Path.Combine(_environment.WebRootPath, relativeImagePath);
+
+            using (var fileStream = new FileStream(imagePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(fileStream);
+            }
+
+            // Thay đổi đường dẫn về định dạng chéo (/)
+            relativeImagePath = relativeImagePath.Replace("\\", "/");
+
+            return relativeImagePath;
         }
         [HttpPut]
         [Route("api/products/{productId}/reduceQuantity")]
